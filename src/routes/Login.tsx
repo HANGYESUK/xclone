@@ -32,8 +32,7 @@ export default function Login() {
     if (isLoading) return;
     try {
       setIsLoading(true);
-      const credentials = await signInWithEmailAndPassword(auth, data.email, data.password);
-      console.log(credentials.user);
+      await signInWithEmailAndPassword(auth, data.email, data.password);
       navigate('/');
     } catch (e) {
       if (e instanceof FirebaseError) {
