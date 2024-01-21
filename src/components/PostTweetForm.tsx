@@ -1,7 +1,8 @@
 import styled from 'styled-components';
 import { useForm } from 'react-hook-form';
 import { addDoc, collection } from 'firebase/firestore';
-import { auth, database } from '../firebase.ts';
+import { ref, uploadBytes } from 'firebase/storage';
+import { auth, database, storage } from '../firebase.ts';
 
 const PostForm = styled.form`
   display: flex;
@@ -100,13 +101,14 @@ const PostTweetForm = () => {
   const attachment = watch('attachFiles');
 
   const addImagesHandler = (e) => {
-    setValue('attachFiles', [...attachment, ...e.currentTarget.files]);
+    const newFiles = Array.from(e.currentTarget.files) as File[];
+    setValue('attachFiles', [...Array.from(attachment), ...newFiles]);
   };
 
   const removeAttachFile = (name: string) => {
     setValue(
       'attachFiles',
-      attachment.filter((item) => item.name !== name),
+      Array.from(attachment).filter((item) => item.name !== name),
     );
   };
 
@@ -114,12 +116,19 @@ const PostTweetForm = () => {
     const user = auth.currentUser;
     if (tweetData.text.length < 0) return;
     try {
-      await addDoc(collection(database, 'tweet'), {
+      const document = await addDoc(collection(database, 'tweet'), {
         tweetText: tweetData.text,
         createDate: Date.now(),
         userName: user?.displayName || 'Anonymous',
         userId: user?.uid,
       });
+      if (tweetData.attachFiles.length > 0) {
+        const locationRef = ref(storage, `tweets/${user?.uid}-${user?.displayName}/${document.id}/`);
+        const uploadFiles = Array.from(tweetData.attachFiles).map((item) => {
+          return uploadBytes(locationRef, item);
+        });
+        await Promise.all(uploadFiles);
+      }
     } catch (e) {
       console.log(e);
     } finally {
@@ -130,7 +139,7 @@ const PostTweetForm = () => {
   return (
     <PostForm onSubmit={handleSubmit(onSubmit)}>
       <TextArea {...register('text', { maxLength: 500 })}></TextArea>
-      {attachment.map((attachFile, index) => {
+      {Array.from(attachment)?.map((attachFile, index) => {
         return (
           <AttachFiles key={`index-${index}`}>
             <div>{attachFile?.name}</div>
@@ -138,9 +147,16 @@ const PostTweetForm = () => {
           </AttachFiles>
         );
       })}
-      <AttachFileLabel htmlFor={'file'} onChange={addImagesHandler}>
+      <AttachFileLabel htmlFor={'file'}>
         이미지 첨부
-        <AttachFilesInput {...register('attachFiles')} type={'file'} id={'file'} accept={'image/*'} />
+        <AttachFilesInput
+          {...register('attachFiles')}
+          onChange={addImagesHandler}
+          type={'file'}
+          id={'file'}
+          multiple={true}
+          accept={'image/*'}
+        />
       </AttachFileLabel>
       <PostButton type={'submit'} value={'트윗'}></PostButton>
     </PostForm>
