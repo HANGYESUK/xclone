@@ -59,19 +59,23 @@ const AttachFiles = styled.div`
   display: flex;
   flex-direction: row;
   justify-content: space-between;
+  align-items: center;
   border: none;
   color: white;
   div {
-    margin: 10px 10px;
+    margin: 10px 0;
   }
 `;
 
-const RemoveAttachFile = styled.button`
+const RemoveAttachFile = styled.div`
   cursor: pointer;
-  background-color: tomato;
+  background-color: gray;
   border: none;
   color: white;
-  border-radius: 10px;
+  font-weight: bold;
+  font-size: 12px;
+  padding: 5px 7px;
+  border-radius: 50%;
 `;
 
 const PostButton = styled.input`
@@ -100,21 +104,19 @@ const PostTweetForm = () => {
 
   const attachment = watch('attachFiles');
 
-  const addImagesHandler = (e) => {
-    const newFiles = Array.from(e.currentTarget.files) as File[];
+  const onChangeImagesHandler = (e) => {
+    const newFiles = Array.from(e.target.files) as File[];
     setValue('attachFiles', [...Array.from(attachment), ...newFiles]);
   };
 
-  const removeAttachFile = (name: string) => {
-    setValue(
-      'attachFiles',
-      Array.from(attachment).filter((item) => item.name !== name),
-    );
+  const removeAttachFile = (index: number) => {
+    const newAttachment = Array.from(attachment).filter((_, i) => i !== index);
+    setValue('attachFiles', newAttachment);
   };
 
   const onSubmit = async (tweetData: TweetPostForm) => {
     const user = auth.currentUser;
-    if (tweetData.text.length < 0) return;
+    if (tweetData.text.length === 0) return;
     try {
       const document = await addDoc(collection(database, 'tweet'), {
         tweetText: tweetData.text,
@@ -123,8 +125,8 @@ const PostTweetForm = () => {
         userId: user?.uid,
       });
       if (tweetData.attachFiles.length > 0) {
-        const locationRef = ref(storage, `tweets/${user?.uid}-${user?.displayName}/${document.id}/`);
         const uploadFiles = Array.from(tweetData.attachFiles).map((item) => {
+          const locationRef = ref(storage, `tweets/${user?.uid}-${user?.displayName}/${document.id}/${item.name}`);
           return uploadBytes(locationRef, item);
         });
         await Promise.all(uploadFiles);
@@ -143,7 +145,7 @@ const PostTweetForm = () => {
         return (
           <AttachFiles key={`index-${index}`}>
             <div>{attachFile?.name}</div>
-            <RemoveAttachFile onClick={() => removeAttachFile(attachFile.name)}>삭제</RemoveAttachFile>
+            <RemoveAttachFile onClick={() => removeAttachFile(index)}>X</RemoveAttachFile>
           </AttachFiles>
         );
       })}
@@ -151,7 +153,7 @@ const PostTweetForm = () => {
         이미지 첨부
         <AttachFilesInput
           {...register('attachFiles')}
-          onChange={addImagesHandler}
+          onChange={onChangeImagesHandler}
           type={'file'}
           id={'file'}
           multiple={true}
