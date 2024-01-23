@@ -1,8 +1,9 @@
 import styled from 'styled-components';
 import { useForm } from 'react-hook-form';
-import { addDoc, collection } from 'firebase/firestore';
-import { ref, uploadBytes } from 'firebase/storage';
+import { addDoc, collection, updateDoc } from 'firebase/firestore';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { auth, database, storage } from '../firebase.ts';
+import { BaseSyntheticEvent } from 'react';
 
 const PostForm = styled.form`
   display: flex;
@@ -42,10 +43,10 @@ const TextArea = styled.textarea`
 
 const AttachFileLabel = styled.label`
   padding: 10px 0px;
-  color: #1d9bf0;
+  color: white;
   text-align: center;
   border-radius: 20px;
-  border: 1px solid #1d9bf0;
+  border: 1px solid white;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -79,13 +80,14 @@ const RemoveAttachFile = styled.div`
 `;
 
 const PostButton = styled.input`
-  background-color: #1d9bf0;
-  color: white;
+  background-color: #ffffff;
+  color: black;
   border: none;
   padding: 10px 0px;
   border-radius: 20px;
   font-size: 16px;
   cursor: pointer;
+
   &:hover,
   &:active {
     opacity: 0.9;
@@ -104,8 +106,15 @@ const PostTweetForm = () => {
 
   const attachment = watch('attachFiles');
 
-  const onChangeImagesHandler = (e) => {
-    const newFiles = Array.from(e.target.files) as File[];
+  const onChangeImagesHandler = (e: BaseSyntheticEvent) => {
+    const newFiles = Array.from(e.target.files)?.filter((item) => {
+      const isFile = item instanceof File;
+      if (isFile && item.size < 1300000) {
+        return item;
+      } else {
+        confirm(`${isFile && item.name}의 용량은 업로드 최대용량을 초과 하였습니다.(최대용량 12MB)`);
+      }
+    }) as File[];
     setValue('attachFiles', [...Array.from(attachment), ...newFiles]);
   };
 
@@ -125,11 +134,19 @@ const PostTweetForm = () => {
         userId: user?.uid,
       });
       if (tweetData.attachFiles.length > 0) {
+        const urls: string[] = [];
         const uploadFiles = Array.from(tweetData.attachFiles).map((item) => {
           const locationRef = ref(storage, `tweets/${user?.uid}-${user?.displayName}/${document.id}/${item.name}`);
-          return uploadBytes(locationRef, item);
+          return (async () => {
+            const result = await uploadBytes(locationRef, item);
+            const url = await getDownloadURL(result.ref);
+            urls.push(url);
+          })();
         });
         await Promise.all(uploadFiles);
+        await updateDoc(document, {
+          photos: urls,
+        });
       }
     } catch (e) {
       console.log(e);
