@@ -136,7 +136,7 @@ const PostTweetForm = () => {
       if (tweetData.attachFiles.length > 0) {
         const urls: string[] = [];
         const uploadFiles = Array.from(tweetData.attachFiles).map((item) => {
-          const locationRef = ref(storage, `tweets/${user?.uid}-${user?.displayName}/${document.id}/${item.name}`);
+          const locationRef = ref(storage, `tweets/${user?.uid}/${document.id}/${item.name}`);
           return (async () => {
             const result = await uploadBytes(locationRef, item);
             const url = await getDownloadURL(result.ref);
