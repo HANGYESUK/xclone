@@ -33,7 +33,7 @@ const DateAndTime = ({ initDate, type = 'dateAndTime' }: DateAndTimeType) => {
     }
   })();
 
-  return <>{result}</>;
+  return <span style={{ fontSize: '10px' }}>{result}</span>;
 };
 
 export default DateAndTime;
