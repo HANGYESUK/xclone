@@ -14,6 +14,7 @@ const Wrapper = styled.div`
   border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 15px;
   margin: 20px 0;
+  overflow-y: scroll;
 `;
 
 const LeftBtn = styled.button`
@@ -59,7 +60,7 @@ const Username = styled.span`
   font-size: 15px;
 `;
 
-const Payload = styled.p`
+const TweetText = styled.p`
   margin: 10px 0;
   font-size: 18px;
 `;
@@ -76,7 +77,11 @@ const DeleteButton = styled.button`
   cursor: pointer;
 `;
 
-const Tweet = ({ userId, userName, photos, tweetText, createDate, id }: ITweet) => {
+interface TweetType extends ITweet {
+  canDelete?: boolean;
+}
+
+const Tweet = ({ userId, userName, photos, tweetText, createDate, id, canDelete }: TweetType) => {
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [photoIndex, setPhotoIndex] = useState<number>(0);
 
@@ -127,11 +132,11 @@ const Tweet = ({ userId, userName, photos, tweetText, createDate, id }: ITweet) 
       <Column style={{ margin: '10px 0' }}>
         <Row>
           <Username>작성자 : {userName}</Username>
-          {user?.uid === userId ? <DeleteButton onClick={onDelete}>삭제</DeleteButton> : null}
+          {canDelete ? <DeleteButton onClick={onDelete}>삭제</DeleteButton> : null}
         </Row>
       </Column>
       <Row>
-        <Payload>{tweetText}</Payload>
+        <TweetText>{tweetText}</TweetText>
         {photos && (
           <Column>
             <Row>
