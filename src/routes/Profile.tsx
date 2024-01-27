@@ -6,6 +6,7 @@ import { updateProfile } from 'firebase/auth';
 import Tweet from '../components/Tweet.tsx';
 import { ITweet } from '../components/Timeline.tsx';
 import { collection, onSnapshot, orderBy, query, where, limit } from 'firebase/firestore';
+import { useForm } from 'react-hook-form';
 
 const Wrapper = styled.div`
   display: flex;
@@ -45,11 +46,20 @@ const ProfileImgInput = styled.input`
 const UserName = styled.span`
   font-size: 22px;
 `;
+const UserNameInput = styled.input`
+  height: 30px;
+  border: none;
+  border-radius: 5px;
+`;
 
 const Profile = () => {
   const user = auth.currentUser;
   const [profileImg, setProfileImg] = useState(user?.photoURL);
   const [tweets, setTweet] = useState<ITweet[]>([]);
+  const [nameEditMode, setNameEditMode] = useState<boolean>(false);
+
+  const { watch, register, reset } = useForm();
+
   const onProfileImgChange = async (e: BaseSyntheticEvent) => {
     if (!user) return;
     const { files } = e.target;
@@ -63,6 +73,12 @@ const Profile = () => {
         photoURL: profileImgUrl,
       });
     }
+  };
+
+  const onNameEditMode = () => {
+    if (!nameEditMode) {
+      setNameEditMode((prevState) => !prevState);
+    } else return;
   };
 
   useEffect(() => {
@@ -98,7 +114,25 @@ const Profile = () => {
         )}
       </ProfileImgUpload>
       <ProfileImgInput onChange={onProfileImgChange} id="profileImg" type="file" accept="image/*" />
-      <UserName>{user?.displayName ?? 'Anonymous'}</UserName>
+      {!nameEditMode ? (
+        <UserName onClick={onNameEditMode}>{user?.displayName ?? 'Anonymous'}</UserName>
+      ) : (
+        <div>
+          <UserNameInput {...register('displayName')} />
+          <div
+            onClick={async () => {
+              if (!user) return;
+              await updateProfile(user, {
+                displayName: watch('displayName'),
+              });
+              reset();
+              setNameEditMode(false);
+            }}
+          >
+            변경
+          </div>
+        </div>
+      )}
       <Tweets>
         {tweets.map((tweet) => (
           <Tweet key={tweet.id} {...tweet} canDelete={true} />
