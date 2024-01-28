@@ -5,8 +5,9 @@ import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { updateProfile } from 'firebase/auth';
 import Tweet from '../components/Tweet.tsx';
 import { ITweet } from '../components/Timeline.tsx';
-import { collection, onSnapshot, orderBy, query, where, limit } from 'firebase/firestore';
+import { collection, limit, onSnapshot, orderBy, query, where } from 'firebase/firestore';
 import { useForm } from 'react-hook-form';
+import { Box, Row } from '../components/commonStyle.ts';
 
 const Wrapper = styled.div`
   display: flex;
@@ -52,13 +53,17 @@ const UserNameInput = styled.input`
   border-radius: 5px;
 `;
 
+const UserNameBtn = styled.div`
+  cursor: pointer;
+`;
+
 const Profile = () => {
   const user = auth.currentUser;
   const [profileImg, setProfileImg] = useState(user?.photoURL);
   const [tweets, setTweet] = useState<ITweet[]>([]);
   const [nameEditMode, setNameEditMode] = useState<boolean>(false);
 
-  const { watch, register, reset } = useForm();
+  const { watch, setValue, register, reset } = useForm();
 
   const onProfileImgChange = async (e: BaseSyntheticEvent) => {
     if (!user) return;
@@ -77,6 +82,7 @@ const Profile = () => {
 
   const onNameEditMode = () => {
     if (!nameEditMode) {
+      setValue('displayName', user?.displayName);
       setNameEditMode((prevState) => !prevState);
     } else return;
   };
@@ -117,21 +123,29 @@ const Profile = () => {
       {!nameEditMode ? (
         <UserName onClick={onNameEditMode}>{user?.displayName ?? 'Anonymous'}</UserName>
       ) : (
-        <div>
-          <UserNameInput {...register('displayName')} />
-          <div
+        <Row>
+          <UserNameInput {...register('displayName', { minLength: 2 })} />
+          <UserNameBtn
             onClick={async () => {
               if (!user) return;
+              else if (watch('displayName')?.length < 2) return;
               await updateProfile(user, {
                 displayName: watch('displayName'),
               });
               reset();
               setNameEditMode(false);
             }}
+            style={{ marginLeft: '10px' }}
           >
             변경
-          </div>
-        </div>
+          </UserNameBtn>
+          <Box
+            onClick={() => setNameEditMode((prevState) => !prevState)}
+            style={{ marginLeft: '10px', cursor: 'pointer' }}
+          >
+            취소
+          </Box>
+        </Row>
       )}
       <Tweets>
         {tweets.map((tweet) => (
