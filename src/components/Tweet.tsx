@@ -5,6 +5,7 @@ import DateAndTime from './DateAndTime.tsx';
 import { auth, storage, database } from '../firebase.ts';
 import { ref, deleteObject, listAll } from 'firebase/storage';
 import { deleteDoc, doc } from 'firebase/firestore';
+import { Column, Row } from './commonStyle.ts';
 
 const Wrapper = styled.div`
   display: flex;
@@ -30,15 +31,6 @@ const RightBtn = styled.button`
   background-color: transparent;
   cursor: pointer;
   border: none;
-`;
-
-const Column = styled.div``;
-
-const Row = styled.div`
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
 `;
 
 const Carousel = styled.div`
